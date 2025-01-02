@@ -1,5 +1,8 @@
 from psychopy import visual, core, event, sound # type: ignore
-import random, os
+import random
+import os
+import csv
+from enum import Enum
 
 def validate_files():
     required_files = ["mask.png", "440.wav", "659.25.wav"]
@@ -40,9 +43,38 @@ def play_auditory_que(auditory_cue):
     core.wait(0.5)
     auditory_cue.stop()
 
+class ErrorType(Enum):
+    OK = (1, "Ok.")
+    USER_TERMINATED = (2, "Terminated by user.")
+    UNKNOWN = (99, "Unknown error occured.")
+    
+    def __init__(self, code, message):
+        self.code = code
+        self.message = message
+    
+    def print(self):
+         print(f"Error Code: {self.code}, Message: {self.message}")
+
+def handle_error(error):
+    if error == ErrorType.USER_TERMINATED:
+        error.print()
+        core.quit()
+        return
+    else:
+        error.print()
+        return 
+    
 class Trial:
-    def __init__(self, category, id):
+    def __init__(self, category, trial_num, filename):
         self.category = category
+        self.trial_num = trial_num
+        self.filename = filename
+        self.timer = core.Clock()
+    
+    def save_to_file(self, data):
+        with open(self.filename, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(data)
     
     def run(self, win):
         fixation.draw()
@@ -53,8 +85,8 @@ class Trial:
             if 'space' in keys:
                 break
         
-        target_direction = random.choice(["→", "←"])
-        target.text = target_direction
+        target_direction = random.choice(["R", "L"])
+        target.text = self.get_target_text(target_direction)
         
         fixation.draw()
         core.wait(stimulus_delay)
@@ -63,7 +95,8 @@ class Trial:
         mask.draw()
         win.flip()
         core.wait(auditory_cue_delay)
-
+        
+        self.start_timer()
         if self.category == "A":
             play_auditory_que(auditory_cue_low)
         else:
@@ -82,28 +115,41 @@ class Trial:
         while True:
             keys = event.getKeys()
             if 'escape' in keys:
-                print("Experiment terminated by user.")
-                core.quit()
+                handle_error(ErrorType.USER_TERMINATED)
             elif 'left' in keys:
-                response = "←"
+                response = "L"
                 break
             elif 'right' in keys:
-                response = "→"
+                response = "R"
                 break
-        
+        reaction_time = self.get_time()
         correct = response == target_direction
         print(f"Odpowiedź: {response}, Poprawna: {target_direction}, Czy poprawna: {correct}")
-        core.wait(0.5)
-
         
-class Block:
-    def __init__(self, name, n_trials):
-        self.name = name
-        self.trials = self.create_trials(n_trials)
+        data = [self.category, self.trial_num, target_direction, response, correct, reaction_time]
+        self.save_to_file(data)
     
-    def create_trials(self, n_trials):
+    def start_timer(self):
+        self.timer.reset()
+    
+    def get_time(self):
+        return self.timer.getTime()
+    
+    def get_target_text(self, target_direction):
+        if target_direction == "L":
+            return "←"
+        return "→"
+    
+class Block:
+    def __init__(self, name, n_trials, filename):
+        self.name = name
+        self.filename = filename
+        self.trials = self.create_trials(n_trials, filename)
+        
+    
+    def create_trials(self, n_trials, filename):
         categories = ['A', 'B']
-        trials = [Trial(random.choice(categories), i) for i in range(n_trials)]
+        trials = [Trial(random.choice(categories), i, filename) for i in range(n_trials)]
         return trials
     
     def run(self, win):
@@ -118,9 +164,21 @@ class Block:
             )
             progress_message.draw()
             trial.run(win)
+            core.wait(0.5)
+    
+
             
+            
+
 def main():
-    blocks = [Block('L', 5), Block('R', 5)]
+    headers = [ "Category", "Trial", "Target Direction", "Response", "Correct", "Reaction Time"]
+    output_file = 'results.csv'
+    
+    with open(output_file, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(headers)
+    
+    blocks = [Block('L', 5, output_file), Block('R', 5, output_file)]
     for block in blocks:
         block.run(win)
     
