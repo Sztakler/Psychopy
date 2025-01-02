@@ -38,7 +38,7 @@ class Trial:
             writer = csv.writer(file)
             writer.writerow(data)
     
-    def run(self, win):
+    def show_instruction(self, win):
         fixation.draw()
         start_message.draw()
         win.flip()
@@ -46,7 +46,8 @@ class Trial:
             keys = event.getKeys()
             if 'space' in keys:
                 break
-        
+    
+    def show_trial(self, win):
         target_direction = random.choice(["R", "L"])
         target.text = self.get_target_text(target_direction)
         
@@ -56,17 +57,16 @@ class Trial:
         target.draw()
         mask.draw()
         win.flip()
-        core.wait(auditory_cue_delay)
         
-        self.start_timer()
+        return target_direction
+    
+    def play_auditory_cue(self):
         if self.category == "A":
             play_auditory_que(auditory_cue_low)
         else:
             play_auditory_que(auditory_cue_high)
 
-        core.wait(stimulus_duration)
-
-        win.flip()
+    def collect_response(self, win, target_direction):
         response_message = visual.TextStim(win, text="Która strona? (← lub →)", color=(1, 1, 1), height=30, pos=(0, 0))
         response_message.draw()
         win.flip()
@@ -89,6 +89,21 @@ class Trial:
         print(f"Odpowiedź: {response}, Poprawna: {target_direction}, Czy poprawna: {correct}")
         
         data = [self.category, self.trial_num, target_direction, response, correct, reaction_time]
+        return data
+
+    def run(self, win):
+        self.show_instruction(win)
+        target_direction = self.show_trial(win)
+        
+        core.wait(auditory_cue_delay)
+        self.start_timer()
+
+        self.play_auditory_cue()
+
+        core.wait(stimulus_duration)
+        win.flip()
+        
+        data = self.collect_response(win, target_direction)
         self.save_to_file(data)
     
     def start_timer(self):
