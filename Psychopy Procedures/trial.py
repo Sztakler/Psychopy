@@ -1,7 +1,6 @@
 from errors import ErrorType, handle_error
-from psychopy import visual, core, event, sound # type: ignore
+from psychopy import visual, core, event # type: ignore
 import random
-import os
 import csv
 
 from config import fixation, start_message, target, mask, stimulus_delay, auditory_cue_low, auditory_cue_high, auditory_cue_delay, stimulus_duration

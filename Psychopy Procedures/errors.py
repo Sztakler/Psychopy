@@ -1,6 +1,7 @@
 from enum import Enum
 from psychopy import core
 
+
 class ErrorType(Enum):
     OK = (1, "Ok.")
     USER_TERMINATED = (2, "Terminated by user.")

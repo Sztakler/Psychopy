@@ -3,7 +3,7 @@ import csv
 
 from config import win, output_file, headers
 from block import Block
-    
+
 with open(output_file, mode="w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(headers)
@@ -14,4 +14,3 @@ for block in blocks:
 
 win.close()
 core.quit()
-    

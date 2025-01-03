@@ -29,3 +29,4 @@ class Block:
             progress_message.draw()
             trial.run(win)
             core.wait(0.5)
+    
